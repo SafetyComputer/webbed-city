@@ -10,12 +10,22 @@ const rows = Array.from({ length: height * 2 - 1 }, (_, i) => Math.floor(i / 2))
 const blue_pos = ref<[number, number]>([0, 0])
 const green_pos = ref<[number, number]>([width - 1, height - 1])
 
-onMounted(async () => {
-  const city: City = City.new(width, height)
-  const blue_coordinate: Coordinate = city.get_blue_position()
-  console.log(blue_coordinate)
-  console.log(city.get_vertical_wall())
-})
+const horizontal_wall = ref<string[][]>([])
+const vertical_wall = ref<string[][]>([])
+
+const city: City = City.new(width, height)
+const blue_coordinate: Coordinate = city.get_blue_position()
+const green_coordinate: Coordinate = city.get_green_position()
+blue_pos.value = [blue_coordinate.get_x(), blue_coordinate.get_y()]
+green_pos.value = [green_coordinate.get_x(), green_coordinate.get_y()]
+
+horizontal_wall.value = city.get_horizontal_wall()['board_matrix']
+vertical_wall.value = city.get_vertical_wall()['board_matrix']
+
+horizontal_wall.value[0][0] = 'Blue'
+vertical_wall.value[4][3] = 'Green'
+
+console.log(blue_pos.value, green_pos.value, vertical_wall.value, horizontal_wall.value)
 </script>
 
 <template>
@@ -32,9 +42,11 @@ onMounted(async () => {
         class="flex justify-center items-center rounded-2xl min-w-2 min-h-2"
         :class="{
           grow: y_index % 2 === 0,
-          invisible: x_index % 2 !== 0 && y_index % 2 !== 0,
           'border-slate-700': x_index % 2 === 0 && y_index % 2 === 0,
           'border-2': x_index % 2 === 0 && y_index % 2 === 0,
+          'bg-slate-400':
+            (x_index % 2 === 0 && y_index % 2 !== 0 && horizontal_wall[row][col] !== 'Empty') ||
+            (x_index % 2 !== 0 && y_index % 2 === 0 && vertical_wall[row][col] !== 'Empty'),
         }"
       >
         <div
