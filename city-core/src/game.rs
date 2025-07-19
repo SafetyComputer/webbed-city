@@ -11,13 +11,16 @@ use rand::Rng;
 extern crate wasm_bindgen;
 use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
+
+
 #[derive(Clone, Copy)]
-#[wasm_bindgen]
 #[derive(Deserialize, Serialize)]
+#[wasm_bindgen]
+#[repr(u8)]
 pub enum Cell {
-    Empty,
-    Blue,
-    Green,
+    Empty = 0,
+    Blue = 1,
+    Green = 2,
 }
 
 impl Cell {
@@ -92,11 +95,13 @@ impl Board<Cell> {
 }
 
 #[derive(Copy, Clone, PartialEq)]
+#[wasm_bindgen]
+#[repr(u8)]
 pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
+    Up = 0,
+    Down = 1,
+    Left = 2,
+    Right = 3,
 }
 
 pub const DIRECION_VALUES: [Direction; 4] = [
@@ -136,6 +141,13 @@ pub struct Coordinate {
     y: i32,
 }
 
+impl  Coordinate {
+    pub fn to_tuple(self) -> (i32, i32) {
+        (self.x, self.y)
+    }
+}
+
+#[wasm_bindgen]
 impl Coordinate {
     pub fn new(x: i32, y: i32) -> Coordinate {
         Coordinate { x, y }
@@ -149,9 +161,14 @@ impl Coordinate {
         self + direction.relative_position()
     }
 
-    pub fn to_tuple(self) -> (i32, i32) {
-        (self.x, self.y)
+    pub fn get_x(&self) -> i32 {
+        self.x
     }
+
+    pub fn get_y(&self) -> i32 {
+        self.y
+    }
+    
 }
 
 impl PartialEq for Coordinate {
