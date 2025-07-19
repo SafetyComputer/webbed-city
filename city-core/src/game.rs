@@ -137,8 +137,8 @@ impl fmt::Debug for Direction {
 #[derive(Debug, Clone, Copy)]
 #[wasm_bindgen]
 pub struct Coordinate {
-    x: i32,
-    y: i32,
+    pub x: i32,
+    pub y: i32,
 }
 
 impl  Coordinate {
@@ -161,13 +161,13 @@ impl Coordinate {
         self + direction.relative_position()
     }
 
-    pub fn get_x(&self) -> i32 {
-        self.x
-    }
+    // pub fn get_x(&self) -> i32 {
+    //     self.x
+    // }
 
-    pub fn get_y(&self) -> i32 {
-        self.y
-    }
+    // pub fn get_y(&self) -> i32 {
+    //     self.y
+    // }
     
 }
 
@@ -188,18 +188,11 @@ impl Add<Coordinate> for Coordinate {
 #[derive(Clone, Copy, PartialEq)]
 #[wasm_bindgen]
 pub struct Move {
-    destination: Coordinate,
-    place_wall: Direction,
+    pub destination: Coordinate,
+    pub place_wall: Direction,
 }
 
 impl Move {
-    pub fn new(destination: Coordinate, place_wall: Direction) -> Move {
-        Move {
-            destination,
-            place_wall,
-        }
-    }
-
     pub fn from_notation(notation: &str) -> Result<Move, &'static str> {
         if notation == "exit" {
             panic!("exit")
@@ -227,6 +220,16 @@ impl Move {
             Direction::Right => 3,
         };
         (self.destination.to_tuple(), wall_direction)
+    }
+}
+
+#[wasm_bindgen]
+impl Move {
+    pub fn new(destination: Coordinate, place_wall: Direction) -> Move {
+        Move {
+            destination,
+            place_wall,
+        }
     }
 }
 
