@@ -21,7 +21,7 @@
     "vite-plugin-wasm": "^3.5.0",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1",
-    "city_core": "file:../city_core/pkg",
+    "city_core": "file:../city_core/pkg"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.2",

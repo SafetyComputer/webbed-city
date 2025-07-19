@@ -15,12 +15,15 @@ const horizontal_wall = ref<string[][]>([])
 const vertical_wall = ref<string[][]>([])
 
 const blue_turn = ref(true)
+const game_over = ref(false)
 
-var city: City = City.new(width, height)
+const history = ref<Move[]>([])
+
+let city: City = City.new(width, height)
 
 const resetGame = () => {
   city = City.new(width, height)
-  updateDisplay()
+  updateGameState()
 }
 
 const directionFromString = (str: String) => {
@@ -37,7 +40,7 @@ const directionFromString = (str: String) => {
   }
 }
 
-const updateDisplay = () => {
+const updateGameState = () => {
   const blue_coordinate: Coordinate = city.get_blue_position()
   const green_coordinate: Coordinate = city.get_green_position()
 
@@ -48,11 +51,16 @@ const updateDisplay = () => {
   vertical_wall.value = city.get_vertical_wall()['board_matrix']
 
   blue_turn.value = city.blue_turn()
+  history.value = city.get_history()
+
+  game_over.value = city.game_over()
+  if (game_over.value === true) {
+    let result = city.game_result()
+    alert(`Game Over! ${result['winner']} wins! ${result['score']['blue']} : ${result['score']['green']}`)
+  }
 }
 
-updateDisplay()
-
-console.log(blue_pos.value, green_pos.value, vertical_wall.value, horizontal_wall.value)
+updateGameState()
 
 const board_container = useTemplateRef('board-container')
 const mouse_pos = ref({ x: 0, y: 0 })
@@ -76,7 +84,7 @@ onMounted(() => {
       directionFromString(current_move.value.wall),
     )
     console.log(city.make_move(move, true))
-    updateDisplay()
+    updateGameState()
     console.log(blue_pos.value)
   })
 })
@@ -105,6 +113,7 @@ const getMouseMove = () => {
 
 defineExpose({
   resetGame,
+  history
 })
 </script>
 

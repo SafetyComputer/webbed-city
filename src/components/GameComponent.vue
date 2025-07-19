@@ -5,11 +5,7 @@ import BoardComponent from '@/components/BoardComponent.vue'
 const gameTime = ref({ white: 600, black: 600 }) // 10 minutes each
 const currentPlayer = ref('white')
 const gameStatus = ref('playing') // playing, paused, finished
-const moveHistory = ref([
-  { player: 'white', move: 'A1', time: '10:00' },
-  { player: 'black', move: 'B2', time: '9:58' },
-  { player: 'white', move: 'C3', time: '9:55' },
-])
+import { City, Coordinate, Direction, Move } from '../../city-core/pkg/'
 
 // Players info
 const players = ref({
@@ -66,7 +62,7 @@ const requestDraw = () => {
 }
 
 const resetGame = () => {
-  boardRef.value.resetGame()
+  boardRef.value?.resetGame()
 }
 </script>
 
@@ -203,17 +199,16 @@ const resetGame = () => {
         >
           <!-- Move History -->
           <div v-if="showMoves" class="flex-1 p-4 overflow-y-auto">
-            <div class="space-y-2">
+            <div class="grid grid-cols-2 gap-4">
               <div
-                v-for="(move, index) in moveHistory"
+                v-for="(move, index) in boardRef?.history"
                 :key="index"
-                class="flex justify-between items-center text-sm"
+                class="flex justify-center items-center text-md font-mono font-bold gap-8"
               >
-                <span class="text-slate-300">{{ index + 1 }}.</span>
+                <span v-if="index % 2 === 0" class="text-slate-300">{{ (index + 2) / 2 }}.</span>
                 <span :class="move.player === 'white' ? 'text-white' : 'text-slate-300'">
-                  {{ move.move }}
+                  {{ String.fromCharCode(move.destination.x + 97) + (move.destination.y + 1).toString() + move.place_wall.toString()[0] }}
                 </span>
-                <span class="text-slate-500">{{ move.time }}</span>
               </div>
             </div>
           </div>
