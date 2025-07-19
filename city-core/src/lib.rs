@@ -7,20 +7,21 @@ mod game;
 use game::*;
 
 #[derive(Serialize)]
+#[wasm_bindgen]
 pub struct GameResult {
     winner: Winner,
-    score: Score
+    score: Score,
 }
 #[wasm_bindgen]
 pub struct City {
-    inner: Game
+    inner: Game,
 }
 
 #[wasm_bindgen]
 impl City {
-    pub fn new(width:i32, height:i32) -> City{
+    pub fn new(width: i32, height: i32) -> City {
         City {
-            inner:Game::new(width, height)
+            inner: Game::new(width, height),
         }
     }
 
@@ -48,7 +49,7 @@ impl City {
         self.inner.blue_turn
     }
 
-    pub fn make_move(&mut self, mv: Move, safe:bool) -> bool {
+    pub fn make_move(&mut self, mv: Move, safe: bool) -> bool {
         self.inner.make_move(mv, safe)
     }
 
@@ -68,8 +69,8 @@ impl City {
     pub fn game_result(&mut self) -> JsValue {
         let (winner, score) = self.inner.game_result();
         let result = GameResult {
-            winner:winner,
-            score:score
+            winner: winner,
+            score: score,
         };
         serde_wasm_bindgen::to_value(&result).unwrap()
     }
