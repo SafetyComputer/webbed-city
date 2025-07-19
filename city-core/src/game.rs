@@ -94,7 +94,7 @@ impl Board<Cell> {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Serialize)]
 #[wasm_bindgen]
 #[repr(u8)]
 pub enum Direction {
@@ -134,7 +134,7 @@ impl fmt::Debug for Direction {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 #[wasm_bindgen]
 pub struct Coordinate {
     pub x: i32,
@@ -185,7 +185,7 @@ impl Add<Coordinate> for Coordinate {
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Serialize)]
 #[wasm_bindgen]
 pub struct Move {
     pub destination: Coordinate,
@@ -284,13 +284,13 @@ impl Ord for EvaluatedMove {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Score {
     blue: i32,
     green: i32,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize)]
 pub enum Winner {
     Blue,
     Green,
@@ -310,7 +310,7 @@ pub struct Game {
 
     pub blue_turn: bool, // true for blue, false for green
 
-    history: Vec<Move>, // history of moves
+    pub history: Vec<Move>, // history of moves
     blue_reachable_cache: Board<bool>,
     green_reachable_cache: Board<bool>,
     blue_steps_cache: Board<i32>,
