@@ -26,7 +26,7 @@ const resetGame = () => {
   updateGameState()
 }
 
-const directionFromString = (str: String) => {
+const directionFromString = (str: string) => {
   if (str === 'U') {
     return Direction.Up
   } else if (str === 'D') {
@@ -55,7 +55,7 @@ const updateGameState = () => {
 
   game_over.value = city.game_over()
   if (game_over.value === true) {
-    let result = city.game_result()
+    const result = city.game_result()
     alert(`Game Over! ${result['winner']} wins! ${result['score']['blue']} : ${result['score']['green']}`)
   }
 }
@@ -67,7 +67,7 @@ const mouse_pos = ref({ x: 0, y: 0 })
 const current_move = ref({ x: 0, y: 0, wall: '' })
 
 onMounted(() => {
-  let rect = board_container.value?.getClientRects()[0]
+  const rect = board_container.value?.getClientRects()[0]
   // get mouse DOM position
   board_container.value?.addEventListener('mousemove', (event: MouseEvent) => {
     mouse_pos.value = {
@@ -112,6 +112,7 @@ const getMouseMove = () => {
 }
 
 defineExpose({
+  blue_turn,
   resetGame,
   history
 })
@@ -119,37 +120,25 @@ defineExpose({
 
 <template>
   <div class="flex flex-row w-full aspect-square gap-2 p-3" ref="board-container">
-    <div
-      v-for="(col, x_index) in cols_with_gap"
-      :key="`col-${x_index}`"
-      class="flex flex-col h-full gap-2"
-      :class="{ grow: x_index % 2 === 0 }"
-    >
-      <div
-        v-for="(row, y_index) in rows_with_gap"
-        :key="`row-${y_index}`"
-        class="flex justify-center items-center rounded-2xl min-w-2 min-h-2"
-        :class="{
+    <div v-for="(col, x_index) in cols_with_gap" :key="`col-${x_index}`" class="flex flex-col h-full gap-2"
+      :class="{ grow: x_index % 2 === 0 }">
+      <div v-for="(row, y_index) in rows_with_gap" :key="`row-${y_index}`"
+        class="flex justify-center items-center rounded-2xl min-w-2 min-h-2" :class="{
           grow: y_index % 2 === 0,
           'border-slate-700': x_index % 2 === 0 && y_index % 2 === 0,
           'border-2': x_index % 2 === 0 && y_index % 2 === 0,
           'bg-slate-400':
             (x_index % 2 === 0 && y_index % 2 !== 0 && horizontal_wall[row][col] !== 'Empty') ||
             (x_index % 2 !== 0 && y_index % 2 === 0 && vertical_wall[row][col] !== 'Empty'),
-        }"
-      >
-        <div
-          v-if="x_index % 2 === 0 && y_index % 2 === 0"
-          class="rounded-full w-[80%] h-[80%]"
-          :class="{
-            'bg-linear-50': blue_pos.x === col && blue_pos.y === row,
-            'from-blue-800': blue_pos.x === col && blue_pos.y === row,
-            'to-cyan-600': blue_pos.x === col && blue_pos.y === row,
-            'bg-linear-65': green_pos.x === col && green_pos.y === row,
-            'from-green-800': green_pos.x === col && green_pos.y === row,
-            'to-emerald-600': green_pos.x === col && green_pos.y === row,
-          }"
-        ></div>
+        }">
+        <div v-if="x_index % 2 === 0 && y_index % 2 === 0" class="rounded-full w-[80%] h-[80%]" :class="{
+          'bg-linear-50': blue_pos.x === col && blue_pos.y === row,
+          'from-blue-800': blue_pos.x === col && blue_pos.y === row,
+          'to-cyan-600': blue_pos.x === col && blue_pos.y === row,
+          'bg-linear-65': green_pos.x === col && green_pos.y === row,
+          'from-green-800': green_pos.x === col && green_pos.y === row,
+          'to-emerald-600': green_pos.x === col && green_pos.y === row,
+        }"></div>
       </div>
     </div>
   </div>
