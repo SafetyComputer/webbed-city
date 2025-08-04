@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 import BoardComponent from '@/components/BoardComponent.vue'
 // Game state
 const gameTime = ref({ white: 600, black: 600 }) // 10 minutes each
 const currentPlayer = ref('white')
 const gameStatus = ref('playing') // playing, paused, finished
-const moveHistory = ref([
-  { player: 'white', move: 'A1', time: '10:00' },
-  { player: 'black', move: 'B2', time: '9:58' },
-  { player: 'white', move: 'C3', time: '9:55' },
-])
+import { City, Coordinate, Direction, Move } from '../../city-core/pkg/'
 
 // Players info
 const players = ref({
@@ -36,6 +32,8 @@ const newMessage = ref('')
 const showChat = ref(true)
 const showMoves = ref(true)
 
+const boardRef = useTemplateRef('board')
+
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
@@ -61,6 +59,10 @@ const resignGame = () => {
 
 const requestDraw = () => {
   alert('已向对手发送和棋请求')
+}
+
+const resetGame = () => {
+  boardRef.value?.resetGame()
 }
 </script>
 
@@ -101,13 +103,13 @@ const requestDraw = () => {
           <div class="space-y-2">
             <button
               @click="requestDraw"
-              class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded transition-colors text-sm"
+              class="w-full bg-blue-700 hover:bg-blue-800 text-white py-2 px-3 rounded transition-colors text-sm"
             >
               请求和棋
             </button>
             <button
               @click="resignGame"
-              class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded transition-colors text-sm"
+              class="w-full bg-red-700 hover:bg-red-800 text-white py-2 px-3 rounded transition-colors text-sm"
             >
               认输
             </button>
@@ -115,6 +117,12 @@ const requestDraw = () => {
               class="w-full bg-slate-600 hover:bg-slate-500 text-white py-2 px-3 rounded transition-colors text-sm"
             >
               暂停
+            </button>
+            <button
+              @click="resetGame"
+              class="w-full bg-yellow-700 hover:bg-yellow-800 text-white py-2 px-3 rounded transition-colors text-sm"
+            >
+              重置
             </button>
           </div>
         </div>
@@ -149,9 +157,9 @@ const requestDraw = () => {
       <!-- Center - Game Board -->
       <div class="col-span-6">
         <div
-          class="bg-slate-800/50 backdrop-blur rounded-lg border border-slate-700 h-full flex items-center justify-center p-5"
+          class="bg-slate-800/50 backdrop-blur rounded-lg border border-slate-700 h-full flex items-center justify-center p-2"
         >
-          <BoardComponent />
+          <BoardComponent ref="board" />
         </div>
       </div>
 
@@ -191,17 +199,16 @@ const requestDraw = () => {
         >
           <!-- Move History -->
           <div v-if="showMoves" class="flex-1 p-4 overflow-y-auto">
-            <div class="space-y-2">
+            <div class="grid grid-cols-2 gap-4">
               <div
-                v-for="(move, index) in moveHistory"
+                v-for="(move, index) in boardRef?.history"
                 :key="index"
-                class="flex justify-between items-center text-sm"
+                class="flex justify-center items-center text-md font-mono font-bold gap-8"
               >
-                <span class="text-slate-300">{{ index + 1 }}.</span>
+                <span v-if="index % 2 === 0" class="text-slate-300">{{ (index + 2) / 2 }}.</span>
                 <span :class="move.player === 'white' ? 'text-white' : 'text-slate-300'">
-                  {{ move.move }}
+                  {{ String.fromCharCode(move.destination.x + 97) + (move.destination.y + 1).toString() + move.place_wall.toString()[0] }}
                 </span>
-                <span class="text-slate-500">{{ move.time }}</span>
               </div>
             </div>
           </div>
