@@ -7,7 +7,6 @@ mod game;
 use game::*;
 
 #[derive(Serialize)]
-#[wasm_bindgen]
 pub struct GameResult {
     winner: Winner,
     score: Score,
