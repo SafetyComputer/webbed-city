@@ -1,10 +1,38 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useUserStore } from '@/stores/user'
+import { useRouter } from 'vue-router'
+import { API } from '@/services'
+
+const userStore = useUserStore()
+const router = useRouter()
 
 const gameDescription = ref(`
 围城是一个策略性双人对弈游戏，玩家需要通过巧妙的布局和移动来包围对手的棋子。
 游戏规则简单易学，但策略深度丰富，适合所有年龄段的玩家。
 `)
+
+const handleLogout = async () => {
+  await API.users.logout()
+    .then(() => {
+      userStore.logout()
+    })
+    .catch((error) => {
+      console.error('退出登录失败:', error)
+    })
+    .finally(() => {
+
+      router.push('/')
+    })
+}
+
+const handleQuickMatch = () => {
+  router.push('/play?mode=quick')
+}
+
+const handleCreateRoom = () => {
+  router.push('/play?mode=create')
+}
 </script>
 
 <template>
@@ -16,7 +44,9 @@ const gameDescription = ref(`
           <img src="/icon.png" alt="围城 Logo" class="w-8 h-8 rounded-lg" />
           <h1 class="text-2xl font-bold text-white">围城</h1>
         </div>
-        <div class="flex items-center space-x-4">
+
+        <!-- 未登录状态 -->
+        <div v-if="!userStore.isAuthenticated" class="flex items-center space-x-4">
           <RouterLink to="/login" class="text-slate-300 hover:text-white transition-colors">
             登录
           </RouterLink>
@@ -25,12 +55,31 @@ const gameDescription = ref(`
             注册
           </RouterLink>
         </div>
+
+        <!-- 已登录状态 -->
+        <div v-else class="flex items-center space-x-4">
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="text-white font-medium">{{ userStore.userDisplayName }}</div>
+              <div class="text-slate-400 text-sm">ELO: {{ userStore.userElo }}</div>
+            </div>
+            <div
+              class="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+              <span class="text-white font-bold text-lg">{{ userStore.userDisplayName.charAt(0).toUpperCase() }}</span>
+            </div>
+          </div>
+          <button @click="handleLogout"
+            class="text-slate-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-slate-700/50">
+            退出登录
+          </button>
+        </div>
       </div>
     </header>
 
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-12">
-      <div class="grid lg:grid-cols-2 gap-12 items-center">
+      <!-- 未登录用户的欢迎页面 -->
+      <div v-if="!userStore.isAuthenticated" class="grid lg:grid-cols-2 gap-12 items-center">
         <!-- Left Side - Game Info -->
         <div class="space-y-8">
           <div>
@@ -152,6 +201,104 @@ const gameDescription = ref(`
               快速开始游戏
             </button>
           </RouterLink>
+        </div>
+      </div>
+
+      <!-- 已登录用户的游戏大厅 -->
+      <div v-else class="space-y-8">
+        <!-- 欢迎用户 -->
+        <div class="text-center space-y-4">
+          <h2 class="text-4xl font-bold text-white">
+            欢迎回来，<span class="text-blue-400">{{ userStore.userDisplayName }}</span>！
+          </h2>
+          <p class="text-slate-300 text-lg">选择您的游戏模式，开始新的对局</p>
+        </div>
+
+        <!-- 用户统计 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div class="bg-slate-800/50 backdrop-blur rounded-xl p-6 text-center">
+            <div class="text-3xl font-bold text-blue-400 mb-2">{{ userStore.userElo }}</div>
+            <div class="text-slate-400">当前ELO</div>
+          </div>
+          <div class="bg-slate-800/50 backdrop-blur rounded-xl p-6 text-center">
+            <div class="text-3xl font-bold text-green-400 mb-2">12</div>
+            <div class="text-slate-400">胜场</div>
+          </div>
+          <div class="bg-slate-800/50 backdrop-blur rounded-xl p-6 text-center">
+            <div class="text-3xl font-bold text-red-400 mb-2">5</div>
+            <div class="text-slate-400">负场</div>
+          </div>
+          <div class="bg-slate-800/50 backdrop-blur rounded-xl p-6 text-center">
+            <div class="text-3xl font-bold text-yellow-400 mb-2">70.6%</div>
+            <div class="text-slate-400">胜率</div>
+          </div>
+        </div>
+
+        <!-- 游戏模式选择 -->
+        <div class="grid md:grid-cols-2 gap-8">
+          <!-- 快速匹配 -->
+          <div class="bg-slate-800/50 backdrop-blur rounded-xl p-8 border border-slate-700 text-center space-y-4">
+            <div
+              class="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z">
+                </path>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-white">快速匹配</h3>
+            <p class="text-slate-400">系统自动为您匹配同等级的对手</p>
+            <button @click="handleQuickMatch"
+              class="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold py-3 rounded-lg transition-all transform hover:scale-105">
+              开始匹配
+            </button>
+          </div>
+
+          <!-- 创建房间 -->
+          <div class="bg-slate-800/50 backdrop-blur rounded-xl p-8 border border-slate-700 text-center space-y-4">
+            <div
+              class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-white">创建房间</h3>
+            <p class="text-slate-400">创建私人房间，邀请朋友对战</p>
+            <button @click="handleCreateRoom"
+              class="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-3 rounded-lg transition-all transform hover:scale-105">
+              创建房间
+            </button>
+          </div>
+        </div>
+
+        <!-- 最近对局 -->
+        <div class="bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-slate-700">
+          <h3 class="text-xl font-bold text-white mb-4">最近对局</h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span class="text-white font-medium">胜利</span>
+                <span class="text-slate-400">vs 玩家ABC</span>
+              </div>
+              <div class="text-slate-400 text-sm">2小时前</div>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-red-400 rounded-full"></div>
+                <span class="text-white font-medium">失败</span>
+                <span class="text-slate-400">vs 玩家XYZ</span>
+              </div>
+              <div class="text-slate-400 text-sm">5小时前</div>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span class="text-white font-medium">胜利</span>
+                <span class="text-slate-400">vs 玩家DEF</span>
+              </div>
+              <div class="text-slate-400 text-sm">1天前</div>
+            </div>
+          </div>
         </div>
       </div>
     </main>

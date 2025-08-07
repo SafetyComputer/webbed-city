@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { API } from '@/services'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 const formData = ref({
   username: '',
-  email: '',
   password: '',
   confirmPassword: ''
 })
@@ -15,7 +17,7 @@ const acceptTerms = ref(false)
 
 const handleRegister = async () => {
   // Validation
-  if (!formData.value.username || !formData.value.email || !formData.value.password || !formData.value.confirmPassword) {
+  if (!formData.value.username || !formData.value.password || !formData.value.confirmPassword) {
     errorMessage.value = '请填写所有必填字段'
     return
   }
@@ -39,16 +41,49 @@ const handleRegister = async () => {
   errorMessage.value = ''
 
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    const inputUser = {
+      username: formData.value.username,
+      password: formData.value.password
+    }
 
-    // Here you would typically make an API call to register the user
-    console.log('Registration attempt:', formData.value)
+    const response = await API.users.createUser(inputUser)
 
-    // On successful registration, redirect to login page or home
-    router.push('/login')
-  } catch {
-    errorMessage.value = '注册失败，请稍后重试'
+    if (response.data === 'success') {
+      // 注册成功后自动登录
+      try {
+        await API.users.login({
+          username: formData.value.username,
+          password: formData.value.password
+        })
+
+        // 模拟用户数据，实际应该从响应中获取
+        const userData = {
+          id: 1,
+          username: formData.value.username,
+          elo: 1000 // 新用户默认ELO
+        }
+
+        userStore.login(userData)
+        router.push('/')
+
+      } catch {
+        // 如果自动登录失败，引导用户到登录页面
+        router.push('/login')
+      }
+    } else {
+      errorMessage.value = '注册失败，请稍后重试'
+    }
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'response' in error) {
+      const apiError = error as { response?: { data?: string } }
+      if (apiError.response?.data === 'user already exists') {
+        errorMessage.value = '用户名已存在，请选择其他用户名'
+      } else {
+        errorMessage.value = '注册失败，请稍后重试'
+      }
+    } else {
+      errorMessage.value = '网络错误，请检查您的连接'
+    }
   } finally {
     isLoading.value = false
   }
@@ -80,16 +115,6 @@ const handleRegister = async () => {
             <input id="username" v-model="formData.username" type="text" required
               class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               placeholder="选择一个用户名" />
-          </div>
-
-          <!-- Email Field -->
-          <div>
-            <label for="email" class="block text-sm font-medium text-slate-300 mb-2">
-              邮箱地址
-            </label>
-            <input id="email" v-model="formData.email" type="email" required
-              class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              placeholder="输入您的邮箱地址" />
           </div>
 
           <!-- Password Field -->

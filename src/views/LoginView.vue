@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { API } from '@/services'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
-const email = ref('')
+const userStore = useUserStore()
+const username = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
 
 const handleLogin = async () => {
-  if (!email.value || !password.value) {
+  if (!username.value || !password.value) {
     errorMessage.value = '请填写所有必填字段'
     return
   }
@@ -17,21 +20,45 @@ const handleLogin = async () => {
   isLoading.value = true
   errorMessage.value = ''
 
-  try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
 
-    // Here you would typically make an API call to authenticate the user
-    console.log('Login attempt:', { email: email.value, password: password.value })
-
-    // On successful login, redirect to home page
-    router.push('/')
-  } catch (error) {
-    console.error('Login error:', error)
-    errorMessage.value = '登录失败，请检查您的凭据'
-  } finally {
-    isLoading.value = false
+  const inputLogin = {
+    username: username.value,
+    password: password.value
   }
+
+  await API.users.login(inputLogin)
+    .then(async (res) => {
+      if (res.data === 'success') {
+        // 获取用户信息
+
+        await API.users.getUser({ username: username.value })
+          .then((res) => {
+            const userData = res.data[0]
+            userStore.login(userData)
+            router.push('/')
+          })
+          .catch((err) => {
+            errorMessage.value = '获取用户信息失败，请稍后重试'
+          })
+      }
+    })
+    .catch((err) => {
+      if (err.response) {
+        if (err.response.data === "login info error") {
+          errorMessage.value = '用户名或密码错误'
+        } else if (err.response.data === "already logged in") {
+          errorMessage.value = '您已登录，请先退出当前账户'
+          router.push('/')
+        } else {
+          errorMessage.value = '登录失败，请稍后重试'
+        }
+      } else {
+        errorMessage.value = '网络错误，请检查您的连接'
+      }
+    })
+    .finally(() => {
+      isLoading.value = false
+    })
 }
 </script>
 
@@ -52,14 +79,14 @@ const handleLogin = async () => {
       <!-- Login Form -->
       <div class="bg-slate-800/50 backdrop-blur rounded-xl p-8 border border-slate-700">
         <form @submit.prevent="handleLogin" class="space-y-6">
-          <!-- Email Field -->
+          <!-- Username Field -->
           <div>
-            <label for="email" class="block text-sm font-medium text-slate-300 mb-2">
-              邮箱地址
+            <label for="username" class="block text-sm font-medium text-slate-300 mb-2">
+              用户名
             </label>
-            <input id="email" v-model="email" type="email" required
+            <input id="username" v-model="username" type="text" required
               class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              placeholder="输入您的邮箱地址" />
+              placeholder="输入您的用户名" />
           </div>
 
           <!-- Password Field -->
