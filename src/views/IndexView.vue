@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 import { API } from '@/services'
+import WebSocketStatus from '@/components/WebSocketStatus.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -19,18 +20,21 @@ const handleLogout = async () => {
     })
     .catch((error) => {
       console.error('退出登录失败:', error)
+      if (error.response.data === "haven't logged in") {
+        userStore.logout()
+      } else {
+        alert('退出登录失败，请稍后重试')
+      }
     })
     .finally(() => {
-
       router.push('/')
     })
 }
 
-const handleQuickMatch = () => {
+const handleQuickMatch = async () => {
   router.push('/play?mode=quick')
 }
-
-const handleCreateRoom = () => {
+const handleCreateRoom = async () => {
   router.push('/play?mode=create')
 }
 </script>
@@ -58,6 +62,15 @@ const handleCreateRoom = () => {
 
         <!-- 已登录状态 -->
         <div v-else class="flex items-center space-x-4">
+          <!-- WebSocket连接状态 -->
+          <WebSocketStatus />
+
+          <!-- WebSocket测试链接 -->
+          <RouterLink to="/ws-test" class="text-slate-300 hover:text-blue-400 transition-colors text-sm"
+            title="WebSocket测试">
+            测试
+          </RouterLink>
+
           <div class="flex items-center space-x-3">
             <div class="text-right">
               <div class="text-white font-medium">{{ userStore.userDisplayName }}</div>

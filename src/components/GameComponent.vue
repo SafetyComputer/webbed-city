@@ -4,7 +4,7 @@ import BoardComponent from '@/components/BoardComponent.vue'
 // Game state
 const gameTime = ref({ blue: 600, green: 600 }) // 10 minutes each
 
-const gameStatus = ref('playing') // playing, paused, finished
+const gameStatus = ref('loading') // loading, matchmaking, playing, finished
 
 // Players info
 const players = ref({
@@ -72,11 +72,11 @@ const resetGame = () => {
 
 <template>
   <div class="container mx-auto px-4 py-6">
-    <div class="grid grid-cols-12 gap-6 h-[calc(100vh-120px)]">
+    <div class="flex items-stretch lg:items-start flex-col lg:flex-row w-full gap-6 h-[calc(100vh-120px)]">
       <!-- Left Sidebar - Player Info & Game Controls -->
-      <div class="col-span-3 space-y-4">
+      <div class="grow gap-4 flex flex-row lg:flex-col">
         <!-- Black Player (Top) -->
-        <div class="bg-slate-800/50 backdrop-blur rounded-lg p-4 border border-slate-700">
+        <div class="bg-slate-800/50 backdrop-blur rounded-lg p-4 border grow border-slate-700 transition">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center space-x-3">
               <div class="w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center text-lg">
@@ -122,7 +122,7 @@ const resetGame = () => {
         </div>
 
         <!-- White Player (Bottom) -->
-        <div class="bg-slate-800/50 backdrop-blur rounded-lg p-4 border border-slate-700 transition">
+        <div class="bg-slate-800/50 backdrop-blur rounded-lg p-4 border grow border-slate-700 transition">
           <div class="bg-emerald-500/20 rounded p-2 text-center mb-3"
             :class="{ 'bg-emerald-500/50': !boardRef?.blue_turn }">
             <div class="text-2xl font-mono text-white">{{ formatTime(gameTime.green) }}</div>
@@ -146,7 +146,7 @@ const resetGame = () => {
       </div>
 
       <!-- Center - Game Board -->
-      <div class="col-span-6">
+      <div class="grow-3 sm:max-w-[calc(100vh-120px)]">
         <div
           class="bg-slate-800/50 backdrop-blur rounded-lg border border-slate-700 h-full flex items-center justify-center p-2">
           <BoardComponent ref="board" />
@@ -154,10 +154,10 @@ const resetGame = () => {
       </div>
 
       <!-- Right Sidebar - Moves & Chat -->
-      <div class="col-span-3 flex flex-col h-full">
+      <div class="grow flex flex-col h-full">
         <!-- Tab Headers -->
         <div class="flex bg-slate-800/50 backdrop-blur rounded-t-lg border border-slate-700 border-b-0">
-          <button @click="showMoves = true; showChat = false
+          <button @click="showMoves = !showMoves
             " :class="[
               'flex-1 py-3 px-4 text-sm font-medium transition-colors',
               showMoves ? 'text-white bg-slate-700' : 'text-slate-400 hover:text-white',
@@ -165,8 +165,7 @@ const resetGame = () => {
             着法记录
           </button>
           <button @click="
-            showChat = true;
-          showMoves = false
+            showChat = !showChat
             " :class="[
               'flex-1 py-3 px-4 text-sm font-medium transition-colors',
               showChat ? 'text-white bg-slate-700' : 'text-slate-400 hover:text-white',
@@ -178,8 +177,8 @@ const resetGame = () => {
         <!-- Tab Content -->
         <div class="flex-1 bg-slate-800/50 backdrop-blur rounded-b-lg border border-slate-700 border-t-0 flex flex-col">
           <!-- Move History -->
-          <div v-if="showMoves" class="flex-1 p-4 overflow-y-auto">
-            <div class="grid grid-cols-2 gap-4">
+          <div v-if="showMoves" class="flex-1 flex justify-between flex-col">
+            <div class="grid grid-cols-2 gap-4 p-4 overflow-y-auto">
               <div v-for="(move, index) in boardRef?.history" :key="index"
                 class="flex justify-center items-center text-md font-mono font-bold gap-8">
                 <span v-if="index % 2 === 0" class="text-slate-300">{{ (index + 2) / 2 }}.</span>
@@ -189,12 +188,27 @@ const resetGame = () => {
                 </span>
               </div>
             </div>
+            <div class="flex flex-row border-t border-slate-700">
+              <button
+                class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-sm font-medium transition-colors text-center">
+                开始
+              </button>
+              <button
+                class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-sm font-medium transition-colors text-center">
+                上一步</button>
+              <button
+                class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-sm font-medium transition-colors text-center">
+                下一步</button>
+              <button
+                class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-sm font-medium transition-colors text-center">
+                结束</button>
+            </div>
           </div>
 
           <!-- Chat -->
           <div v-if="showChat" class="flex-1 flex flex-col">
             <!-- Messages -->
-            <div class="flex-1 p-4 overflow-y-auto space-y-3">
+            <div class="flex-1 p-4 overflow-y-auto space-y-3 border-t border-slate-700">
               <div v-for="(msg, index) in chatMessages" :key="index" class="flex flex-col space-y-1">
                 <div class="flex items-center space-x-2">
                   <span :class="[

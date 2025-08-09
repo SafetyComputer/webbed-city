@@ -3,7 +3,7 @@ import GameComponent from '@/components/GameComponent.vue'
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+  <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
     <!-- Header -->
     <header class="bg-slate-800/50 backdrop-blur border-b border-slate-700">
       <div class="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -38,6 +38,29 @@ import GameComponent from '@/components/GameComponent.vue'
       </div>
     </header>
 
-    <GameComponent></GameComponent>
+    <main class="overflow-y-scroll lg:overflow-hidden">
+      <GameComponent></GameComponent>
+
+    </main>
   </div>
 </template>
+
+<style scoped>
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+</style>

@@ -9,6 +9,18 @@ async function getUser(params: UserFilter = {}) {
   return await http.get('/user', { params: params })
 }
 
+async function getUserById(id: string) {
+  return await http.get(`/user`, { params: { id } })
+}
+
+async function getUserByUsername(username: string) {
+  return await http.get(`/user`, { params: { username } })
+}
+
+async function getUserSelf() {
+  return await http.get('/user/self')
+}
+
 async function login(input: InputLogin) {
   return await http.post('/login', input)
 }
@@ -20,6 +32,9 @@ async function logout() {
 export default {
   createUser,
   getUser,
+  getUserById,
+  getUserByUsername,
+  getUserSelf,
   login,
   logout,
 }

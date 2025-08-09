@@ -28,19 +28,9 @@ const handleLogin = async () => {
 
   await API.users.login(inputLogin)
     .then(async (res) => {
-      if (res.data === 'success') {
-        // 获取用户信息
-
-        await API.users.getUser({ username: username.value })
-          .then((res) => {
-            const userData = res.data[0]
-            userStore.login(userData)
-            router.push('/')
-          })
-          .catch((err) => {
-            errorMessage.value = '获取用户信息失败，请稍后重试'
-          })
-      }
+      const userData = res.data
+      userStore.login(userData)
+      router.push('/')
     })
     .catch((err) => {
       if (err.response) {
