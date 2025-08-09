@@ -19,6 +19,7 @@ const possible_moves = ref<Move[]>([])
 
 const blue_turn = ref(true)
 const game_over = ref(false)
+const game_result = ref<{ winner: 'Blue' | 'Green' | 'Draw', score: { blue: number, green: number } } | null>(null)
 
 const history = ref<Move[]>([])
 const displayedMoveIndex = ref(0)
@@ -80,9 +81,9 @@ const updateGameState = () => {
   history.value = city.get_history()
 
   game_over.value = city.game_over()
-  if (game_over.value === true) {
-    const result = city.game_result()
-    alert(`Game Over! ${result['winner']} wins! ${result['score']['blue']} : ${result['score']['green']}`)
+
+  if (game_over.value) {
+    game_result.value = city.game_result()
   }
 }
 
@@ -103,7 +104,6 @@ const handleMouseMove = (event: MouseEvent) => {
     y: ((event.clientY - rect.y) / rect.height) * height,
   }
   current_move.value = getMouseMove()
-  console.log(isCurrentMoveLegal.value)
 }
 
 const handleMouseClick = (event: MouseEvent) => {
@@ -139,7 +139,9 @@ const getMouseMove = () => {
 defineExpose({
   blue_turn,
   resetGame,
-  history
+  history,
+  game_over,
+  game_result
 })
 </script>
 
