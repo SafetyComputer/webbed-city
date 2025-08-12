@@ -1,7 +1,6 @@
-import type { AxiosResponse } from 'axios'
 import http from '../api'
 
-async function getRoom() {
+async function getRooms() {
   return await http.get('/room')
 }
 
@@ -26,7 +25,7 @@ async function reconnect() {
 }
 
 export default {
-  getRoom,
+  getRooms,
   getRoomById,
   createRoom,
   joinRoom,

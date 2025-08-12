@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import IndexView from '@/views/IndexView.vue'
-import PlayView from '@/views/PlayView.vue'
+import GameView from '@/views/GameView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import WebSocketTestView from '@/views/WebSocketTestView.vue'
@@ -14,9 +14,15 @@ const router = createRouter({
       component: IndexView,
     },
     {
-      path: '/play',
-      name: 'play',
-      component: PlayView,
+      path: '/game',
+      name: 'game',
+      component: GameView,
+    },
+    {
+      path: '/game/:room_id',
+      name: 'game-in-room',
+      component: GameView,
+      props: true, // Enable passing route params as props to the component
     },
     {
       path: '/login',

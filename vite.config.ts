@@ -37,13 +37,13 @@ export default defineConfig({
     // https: {},
     proxy: {
       '/api': {
-        target: 'https://10.93.1.227:8088/',
+        target: 'https://127.0.0.1:8088/',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/ws': {
-        target: 'wss://10.93.1.227:8088/',
+        target: 'wss://127.0.0.1:8088/',
         changeOrigin: true,
         secure: false,
         ws: true,
