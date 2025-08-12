@@ -5,7 +5,8 @@ import { useUserStore } from './user'
 export type WebSocketStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 
 export interface WebSocketMessage {
-  message_type: string
+  message_type: string // Chat, Move, Match, End, Join, Leave
+  room: number
   [key: string]: unknown
 }
 

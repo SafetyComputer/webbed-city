@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
-import { City, Coordinate, Direction, Move } from '../../city-core/pkg/'
+import { City, Coordinate, Move } from '../../city-core/pkg/'
+import { API } from '@/services'
+import type { SerializedMove } from '@/services/rooms/types'
+import { useWebSocket } from '@/composables/useWebSocket'
+
+
+const { onMessage } = useWebSocket()
+const props = defineProps(['color', 'roomId'])
 
 const width = 7
 const height = 7
@@ -22,7 +29,7 @@ const game_over = ref(false)
 const game_result = ref<{ winner: 'Blue' | 'Green' | 'Draw', score: { blue: number, green: number } } | null>(null)
 
 const history = ref<Move[]>([])
-const displayedMoveIndex = ref(0)
+// const displayedMoveIndex = ref(0)
 
 let city: City = City.new(width, height)
 
@@ -31,25 +38,12 @@ const resetGame = () => {
   updateGameState()
 }
 
-const directionFromString = (str: string) => {
-  if (str === 'U') {
-    return Direction.Up
-  } else if (str === 'D') {
-    return Direction.Down
-  } else if (str === 'L') {
-    return Direction.Left
-  } else if (str === 'R') {
-    return Direction.Right
-  } else {
-    throw new Error(`Invalid direction string: ${str}`)
-  }
-}
-
-const intoMove = (move: any) => {
-  return Move.new(
-    Coordinate.new(move.value.x, move.value.y),
-    directionFromString(move.value.wall),
-  )
+const fullDirection = (dir: string) => {
+  if (dir === 'U') return 'Up'
+  if (dir === 'D') return 'Down'
+  if (dir === 'L') return 'Left'
+  if (dir === 'R') return 'Right'
+  throw new Error(`Invalid direction: ${dir}`)
 }
 
 const isCurrentMoveLegal = computed(() => {
@@ -90,15 +84,19 @@ const updateGameState = () => {
 updateGameState()
 
 const board_container = useTemplateRef('board-container')
-const mouse_pos = ref({ x: 0, y: 0 })
-const current_move = ref({ x: 0, y: 0, wall: '' })
+const mouse_pos = ref({ x: NaN, y: NaN })
+const current_move = ref({ x: NaN, y: NaN, wall: '' })
 
 onMounted(() => {
   updateGameState()
 })
 
 const handleMouseMove = (event: MouseEvent) => {
+  if (!props.color || blue_turn.value !== (props.color === 'blue')) return
+
   const rect = board_container.value?.getClientRects()[0]
+
+  if (!rect) return
   mouse_pos.value = {
     x: ((event.clientX - rect.x) / rect.width) * width,
     y: ((event.clientY - rect.y) / rect.height) * height,
@@ -106,15 +104,34 @@ const handleMouseMove = (event: MouseEvent) => {
   current_move.value = getMouseMove()
 }
 
-const handleMouseClick = (event: MouseEvent) => {
-  const move = intoMove(current_move)
-  city.make_move(move, true)
-  displayedMoveIndex.value += 1
+const handleMouseClick = () => {
+  if (!props.color || blue_turn.value !== (props.color === 'blue')) return
+
+  const move: SerializedMove = {
+    destination: {
+      x: current_move.value.x,
+      y: current_move.value.y,
+    },
+    place_wall: fullDirection(current_move.value.wall),
+  }
+
+  API.rooms.makeMove(props.roomId, move)
+    .then(() => {
+      city.make_move(move, true)
+      updateGameState()
+    })
+    .catch((error) => {
+      console.error('提交移动失败:', error)
+    })
+
+  // city.make_move(move, true)
+  // displayedMoveIndex.value += 1
   updateGameState()
 }
 
 
 const getMouseMove = () => {
+
   const rel_x = (mouse_pos.value.x % 1) - 0.5
   const rel_y = (mouse_pos.value.y % 1) - 0.5
   let wall = ''

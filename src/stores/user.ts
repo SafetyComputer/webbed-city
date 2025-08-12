@@ -12,6 +12,7 @@ export const useUserStore = defineStore('user', () => {
   // 计算属性
   const userDisplayName = computed(() => user.value?.username || '游客')
   const userElo = computed(() => user.value?.elo || 0)
+  const userId = computed(() => user.value?.id || null)
 
   // 操作
   function setUser(userData: User) {
@@ -23,7 +24,6 @@ export const useUserStore = defineStore('user', () => {
 
   function login(userData: User) {
     setUser(userData)
-    console.log('User logged in:', userData)
   }
 
   function logout() {
@@ -49,7 +49,6 @@ export const useUserStore = defineStore('user', () => {
         const userData = JSON.parse(savedUser) as User
         user.value = userData
         isAuthenticated.value = true
-        console.log('User restored from localStorage:', userData)
       }
     } catch (error) {
       console.error('Failed to restore user from localStorage:', error)
@@ -61,6 +60,7 @@ export const useUserStore = defineStore('user', () => {
   return {
     user,
     isAuthenticated,
+    userId,
     userDisplayName,
     userElo,
     setUser,

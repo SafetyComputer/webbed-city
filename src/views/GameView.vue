@@ -3,13 +3,18 @@ import { computed, ref, useTemplateRef, onMounted, onUnmounted, watch } from 'vu
 import BoardComponent from '@/components/BoardComponent.vue'
 import { API } from '@/services'
 import router from '@/router'
+import { useUserStore } from '@/stores/user'
 import { base64ToNumber } from '@/utils/base64'
-import { useWebSocketStore } from '@/stores/websocket'
+import type { WebSocketMessage } from '@/stores/websocket'
+import { useWebSocket } from '@/composables/useWebSocket'
 
-const wsStore = useWebSocketStore()
 
+const userStore = useUserStore()
+const { isConnected, onMessage } = useWebSocket()
 const roomId = ref(base64ToNumber(router.currentRoute.value.params.room_id))
 const role = ref(router.currentRoute.value.query.spectator ? 'viewer' : 'player')
+const color = ref('') // green, blue
+
 // Game state
 const gameTime = ref({ blue: 600, green: 600 }) // 10 minutes each
 const gameStatus = ref('loading') // loading, waiting, playing, finished
@@ -29,7 +34,9 @@ const timerInterval = ref<number | null>(null)
 const joinRoom = async () => {
   await API.rooms.joinRoom(roomId.value, role.value)
     .then(() => {
-      gameStatus.value = 'waiting'
+      if (gameStatus.value === 'loading') {
+        gameStatus.value = 'waiting'
+      }
     })
     .catch(err => {
       console.error('加入房间失败:', err)
@@ -117,7 +124,7 @@ const resetTimer = () => {
 // 监听游戏状态变化
 onMounted(() => {
   startTimer()
-  if (wsStore.status === 'connected') {
+  if (isConnected.value) {
     joinRoom()
   }
 })
@@ -127,9 +134,55 @@ onUnmounted(() => {
 })
 
 
-watch(() => wsStore.status, (status) => {
-  if (status === 'connected') {
+watch(() => isConnected.value, (status) => {
+  if (status) {
     joinRoom()
+  }
+})
+
+
+const fetchPlayerData = async (blue_id: number, green_id: number) => {
+  await API.users.getUserById(blue_id)
+    .then(response => {
+      players.value.blue = {
+        name: response.data[0].username,
+        rating: response.data[0].elo,
+        avatar: '👤',
+        online: true,
+      }
+    })
+    .catch(err => {
+      console.error('获取蓝方玩家信息失败:', err)
+    })
+
+  await API.users.getUserById(green_id)
+    .then(response => {
+      players.value.green = {
+        name: response.data[0].username,
+        rating: response.data[0].elo,
+        avatar: '👤',
+        online: true,
+      }
+    })
+    .catch(err => {
+      console.error('获取绿方玩家信息失败:', err)
+    })
+}
+
+onMessage('Match', (msg: WebSocketMessage) => {
+  console.log(msg)
+  if (gameStatus.value === 'playing') return
+  const data = JSON.parse(msg.data)
+  if (msg.room === roomId.value && data.player_blue && data.player_green) {
+    gameStatus.value = 'playing'
+    fetchPlayerData(data.player_blue, data.player_green)
+
+    if (userStore.userId === data.player_blue) {
+      color.value = 'blue'
+    } else if (userStore.userId === data.player_green) {
+      color.value = 'green'
+    }
+    startTimer()
   }
 })
 
@@ -408,7 +461,7 @@ const copyInviteLink = () => {
           <div class="grow-3 sm:max-w-[calc(100vh-120px)] col-span-2">
             <div
               class="bg-slate-800/50 backdrop-blur rounded-lg border border-slate-700 h-full flex items-center justify-center p-2">
-              <BoardComponent ref="board" />
+              <BoardComponent ref="board" :color="color" :room-id="roomId" />
             </div>
           </div>
 

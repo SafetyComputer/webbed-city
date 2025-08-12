@@ -1,3 +1,4 @@
+import type { SerializedMove } from './types'
 import http from '../api'
 
 async function getRooms() {
@@ -24,6 +25,14 @@ async function reconnect() {
   return await http.get('/reconnect')
 }
 
+async function makeMove(room_id: number, move: SerializedMove) {
+  return await http.post('/room/move', { room_id, mv: move })
+}
+
+async function sendChatMessage(room_id: number, message: string) {
+  return await http.post('/room/chat', { room_id, message })
+}
+
 export default {
   getRooms,
   getRoomById,
@@ -31,4 +40,6 @@ export default {
   joinRoom,
   leaveRoom,
   reconnect,
+  makeMove,
+  sendChatMessage,
 }

@@ -58,14 +58,6 @@ export function useWebSocket() {
     })
   }
 
-  // 发送消息的便捷方法
-  const emit = (message_type: string, data?: Record<string, unknown>) => {
-    return webSocketStore.sendMessage({
-      message_type,
-      ...data,
-    })
-  }
-
   // 组件卸载时停止监听
   onUnmounted(() => {
     stopWatching()
@@ -98,6 +90,5 @@ export function useWebSocket() {
     onAnyMessage,
     onMessages,
     onceMessage,
-    emit,
   }
 }

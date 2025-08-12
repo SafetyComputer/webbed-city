@@ -9,7 +9,7 @@ async function getUser(params: UserFilter = {}) {
   return await http.get('/user', { params: params })
 }
 
-async function getUserById(id: string) {
+async function getUserById(id: number) {
   return await http.get(`/user`, { params: { id } })
 }
 
