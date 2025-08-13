@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
-import { City, Coordinate, Move } from '../../city-core/pkg/'
+import { City, Coordinate, Direction, Move } from '../../city-core/pkg/'
 import { API } from '@/services'
 import type { SerializedMove } from '@/services/rooms/types'
 import { useWebSocket } from '@/composables/useWebSocket'
+import type { WebSocketMessage } from '@/stores/websocket'
 
 
 const { onMessage } = useWebSocket()
@@ -29,7 +30,10 @@ const game_over = ref(false)
 const game_result = ref<{ winner: 'Blue' | 'Green' | 'Draw', score: { blue: number, green: number } } | null>(null)
 
 const history = ref<Move[]>([])
-// const displayedMoveIndex = ref(0)
+
+const board_container = useTemplateRef('board-container')
+const mouse_pos = ref({ x: NaN, y: NaN })
+const current_move = ref({ x: NaN, y: NaN, wall: '' })
 
 let city: City = City.new(width, height)
 
@@ -44,6 +48,29 @@ const fullDirection = (dir: string) => {
   if (dir === 'L') return 'Left'
   if (dir === 'R') return 'Right'
   throw new Error(`Invalid direction: ${dir}`)
+}
+
+
+const intoDirection = (dir: string): Direction => {
+  switch (dir) {
+    case 'Up':
+      return Direction.Up
+    case 'Down':
+      return Direction.Down
+    case 'Left':
+      return Direction.Left
+    case 'Right':
+      return Direction.Right
+    default:
+      throw new Error(`Invalid direction: ${dir}`)
+  }
+}
+
+const intoMove = (move): Move => {
+  return Move.new(
+    Coordinate.new(move.destination.x, move.destination.y),
+    intoDirection(move.place_wall)
+  )
 }
 
 const isCurrentMoveLegal = computed(() => {
@@ -81,15 +108,14 @@ const updateGameState = () => {
   }
 }
 
-updateGameState()
+onMessage('Move', (msg: WebSocketMessage) => {
+  if (msg.room !== props.roomId) return
 
-const board_container = useTemplateRef('board-container')
-const mouse_pos = ref({ x: NaN, y: NaN })
-const current_move = ref({ x: NaN, y: NaN, wall: '' })
-
-onMounted(() => {
+  const move = intoMove(JSON.parse(msg.data))
+  city.make_move(move, true)
   updateGameState()
 })
+
 
 const handleMouseMove = (event: MouseEvent) => {
   if (!props.color || blue_turn.value !== (props.color === 'blue')) return
@@ -117,8 +143,8 @@ const handleMouseClick = () => {
 
   API.rooms.makeMove(props.roomId, move)
     .then(() => {
-      city.make_move(move, true)
-      updateGameState()
+      // city.make_move(move, true)
+      // updateGameState()
     })
     .catch((error) => {
       console.error('提交移动失败:', error)
@@ -152,6 +178,8 @@ const getMouseMove = () => {
     wall: wall,
   }
 }
+
+updateGameState()
 
 defineExpose({
   blue_turn,

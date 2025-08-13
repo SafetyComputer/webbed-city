@@ -10,7 +10,7 @@ import { useWebSocket } from '@/composables/useWebSocket'
 
 
 const userStore = useUserStore()
-const { isConnected, onMessage } = useWebSocket()
+const { isConnected, onMessage, lastMessage } = useWebSocket()
 const roomId = ref(base64ToNumber(router.currentRoute.value.params.room_id))
 const role = ref(router.currentRoute.value.query.spectator ? 'viewer' : 'player')
 const color = ref('') // green, blue
@@ -43,7 +43,19 @@ const joinRoom = async () => {
       alert('加入房间失败，请稍后再试')
     })
 
+  if (lastMessage.value && lastMessage.value.message_type === 'Match' && lastMessage.value.room === roomId.value) {
+    const data = JSON.parse(lastMessage.value.data)
+    if (data.player_blue && data.player_green) {
+      gameStatus.value = 'playing'
+      fetchPlayerData(data.player_blue, data.player_green)
 
+      if (userStore.userId === data.player_blue) {
+        color.value = 'blue'
+      } else if (userStore.userId === data.player_green) {
+        color.value = 'green'
+      }
+    }
+  }
 }
 
 // Players info
@@ -63,10 +75,7 @@ const players = ref({
 })
 
 // Chat
-const chatMessages = ref([
-  { player: '玩家1', message: '你好！', time: '14:30' },
-  { player: '玩家2', message: '加油！', time: '14:31' },
-])
+const chatMessages = ref<Array<{ player: string, message: string, time: string }>>([])
 const newMessage = ref('')
 
 // UI state
@@ -212,15 +221,26 @@ const formatTime = (seconds: number) => {
 }
 
 const sendMessage = () => {
-  if (newMessage.value.trim()) {
-    chatMessages.value.push({
-      player: currentPlayer.value,
-      message: newMessage.value,
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+  API.rooms.sendChatMessage(roomId.value, newMessage.value)
+    .then(() => {
+      newMessage.value = ''
     })
-    newMessage.value = ''
-  }
+    .catch(err => {
+      console.error('发送消息失败:', err)
+      alert('发送消息失败，请稍后再试')
+    })
 }
+
+onMessage('Chat', (msg: WebSocketMessage) => {
+  if (msg.room !== roomId.value) return
+
+  const chat: string = msg.data
+  chatMessages.value.push({
+    player: chat.split(':')[0],
+    message: chat.split(':')[1].trim(),
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  })
+})
 
 const resignGame = () => {
   if (confirm('确定要认输吗？')) {
@@ -542,9 +562,9 @@ const copyInviteLink = () => {
                 <div class="p-4 border-t border-slate-700">
                   <div class="flex space-x-2">
                     <input v-model="newMessage" @keyup.enter="sendMessage" type="text" placeholder="输入消息..."
-                      class="flex-1 bg-slate-700 text-white placeholder-slate-400 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/80 min-w-0" />
-                    <button @click="sendMessage"
-                      class="bg-teal-500/80 hover:bg-teal-600/80 text-slate-900 px-3 py-2 rounded text-sm font-medium transition-colors">
+                      class="flex-1 bg-slate-700 text-white placeholder-slate-400 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/80 min-w-0" />
+                    <button @click="sendMessage" :disabled="!newMessage.trim()"
+                      class="bg-violet-400/80 hover:bg-violet-500/80 text-slate-900 px-3 py-2 rounded text-sm font-medium transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed">
                       发送
                     </button>
                   </div>

@@ -3,12 +3,18 @@ import { useWebSocketStore } from '@/stores/websocket'
 import { useUserStore } from '@/stores/user'
 import type { WebSocketMessage } from '@/stores/websocket'
 
-export function useWebSocket() {
+let isInitialized = false
+
+function initializeWebSocketLogic() {
+  if (isInitialized) {
+    return
+  }
+
   const webSocketStore = useWebSocketStore()
   const userStore = useUserStore()
 
   // 监听用户登录状态变化
-  const stopWatching = watch(
+  watch(
     () => userStore.isAuthenticated,
     (isAuthenticated) => {
       if (isAuthenticated) {
@@ -21,6 +27,15 @@ export function useWebSocket() {
     },
     { immediate: true },
   )
+
+  isInitialized = true
+}
+
+export function useWebSocket() {
+  initializeWebSocketLogic()
+
+  const webSocketStore = useWebSocketStore()
+  const userStore = useUserStore()
 
   // 添加消息监听器（自动清理）
   const onMessage = (type: string, callback: (data: WebSocketMessage) => void) => {
@@ -57,11 +72,6 @@ export function useWebSocket() {
       webSocketStore.removeMessageListener(type, wrappedCallback)
     })
   }
-
-  // 组件卸载时停止监听
-  onUnmounted(() => {
-    stopWatching()
-  })
 
   return {
     // WebSocket状态 - 使用 computed 确保响应式
