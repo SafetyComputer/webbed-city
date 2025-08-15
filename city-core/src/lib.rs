@@ -49,7 +49,7 @@ impl City {
     }
 
     pub fn make_move(&mut self, mv: Move, safe: bool) -> bool {
-        self.inner.make_move(mv, safe)
+        self.inner.make_move(mv, safe, true)
     }
 
     pub fn possible_moves(&mut self) -> JsValue {
@@ -72,5 +72,41 @@ impl City {
             score: score,
         };
         serde_wasm_bindgen::to_value(&result).unwrap()
+    }
+
+    pub fn get_current_move_index(&self) -> usize {
+        self.inner.current_move_index
+    }
+
+    pub fn previous_move(&mut self) {
+        if self.inner.current_move_index > 0 {
+            self.inner
+                .set_current_move_index(self.inner.current_move_index - 1);
+        }
+    }
+
+    pub fn next_move(&mut self) {
+        if self.inner.current_move_index < self.inner.history.len() {
+            self.inner
+                .set_current_move_index(self.inner.current_move_index + 1);
+        }
+    }
+
+    pub fn first_move(&mut self) {
+        self.inner.set_current_move_index(0);
+    }
+
+    pub fn last_move(&mut self) {
+        self.inner.set_current_move_index(self.inner.history.len());
+    }
+
+    pub fn jump_to_move(&mut self, index: usize) {
+        if index <= self.inner.history.len() {
+            self.inner.set_current_move_index(index);
+        }
+    }
+
+    pub fn is_showing_latest(&self) -> bool {
+        self.inner.is_showing_latest()
     }
 }

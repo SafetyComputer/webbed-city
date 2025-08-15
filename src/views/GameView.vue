@@ -83,7 +83,7 @@ const showChat = ref(true)
 const showMoves = ref(true)
 
 const boardRef = useTemplateRef('board')
-const currentPlayer = computed(() => boardRef.value?.blue_turn ? 'blue' : 'green')
+const currentPlayer = computed(() => boardRef.value?.isBlueTurn ? 'blue' : 'green')
 
 // Timer functions
 const startTimer = () => {
@@ -196,16 +196,16 @@ onMessage('Match', (msg: WebSocketMessage) => {
 })
 
 // 监听棋盘游戏结束状态
-watch(() => boardRef.value?.game_over, (isGameOver) => {
+watch(() => boardRef.value?.isGameOver, (isGameOver) => {
   if (isGameOver && gameStatus.value !== 'finished') {
     gameStatus.value = 'finished'
     showGameResult.value = true
     gameResult.value = {
-      winner: boardRef.value?.game_result?.winner.toLowerCase(),
+      winner: boardRef.value?.gameResult?.winner.toLowerCase(),
       reason: '正常结束',
       score: {
-        blue: boardRef.value?.game_result?.score.blue || 0,
-        green: boardRef.value?.game_result?.score.green || 0
+        blue: boardRef.value?.gameResult?.score.blue || 0,
+        green: boardRef.value?.gameResult?.score.green || 0
       }
     }
     stopTimer()
@@ -417,7 +417,7 @@ const copyInviteLink = () => {
                 ]"></div>
               </div>
               <div class="bg-sky-500/20 rounded p-2 text-center transition"
-                :class="{ 'bg-sky-500/50': boardRef?.blue_turn }">
+                :class="{ 'bg-sky-500/50': boardRef?.isBlueTurn }">
                 <div class="text-2xl font-mono text-white">{{ formatTime(gameTime.blue) }}</div>
               </div>
             </div>
@@ -428,27 +428,11 @@ const copyInviteLink = () => {
               <div class="space-y-2 ">
                 <button @click="requestDraw"
                   class="w-full border-1 border-emerald-600 hover:bg-emerald-600  text-white py-2 px-3 rounded transition-colors text-sm">
-                  请求和棋
+                  和棋
                 </button>
                 <button @click="resignGame"
                   class="w-full border-1 border-blue-700 hover:bg-blue-700 text-white py-2 px-3 rounded transition-colors text-sm">
                   认输
-                </button>
-
-                <button @click="resetGame"
-                  class="w-full border-1 border-purple-700 hover:bg-purple-700 text-white py-2 px-3 rounded transition-colors text-sm">
-                  重置
-                </button>
-                <!-- 测试匹配状态按钮 -->
-                <button @click="gameStatus = 'waiting'"
-                  class="w-full border-1 border-amber-600 hover:bg-amber-600 text-white py-2 px-3 rounded transition-colors text-sm">
-                  测试匹配
-                </button>
-                <!-- 测试游戏结束按钮 -->
-                <button
-                  @click="gameResult = { winner: 'blue', reason: '测试结束', score: { blue: 1, green: 0 } }; showGameResult = true; gameStatus = 'finished'"
-                  class="w-full border-1 border-cyan-600 hover:bg-cyan-600 text-white py-2 px-3 rounded transition-colors text-sm">
-                  测试结束
                 </button>
               </div>
             </div>
@@ -456,7 +440,7 @@ const copyInviteLink = () => {
             <!-- White Player (Bottom) -->
             <div class="bg-slate-800/50 backdrop-blur rounded-lg p-4 border border-slate-700 transition">
               <div class="bg-emerald-500/20 rounded p-2 text-center mb-3"
-                :class="{ 'bg-emerald-500/50': !boardRef?.blue_turn }">
+                :class="{ 'bg-emerald-500/50': !boardRef?.isBlueTurn }">
                 <div class="text-2xl font-mono text-white">{{ formatTime(gameTime.green) }}</div>
               </div>
               <div class="flex items-center justify-between">
@@ -508,12 +492,14 @@ const copyInviteLink = () => {
 
             <!-- Tab Content -->
             <div
-              class="flex-1 bg-slate-800/50 backdrop-blur rounded-b-lg border border-slate-700 border-t-0 flex flex-col">
+              class="flex-1 bg-slate-800/50 backdrop-blur rounded-b-lg border border-slate-700 border-t-0 flex flex-col max-h-[80vh]">
               <!-- Move History -->
               <div v-if="showMoves" class="flex-1 flex justify-between flex-col">
-                <div class="grid grid-cols-2 gap-4 p-4 overflow-y-auto">
+                <div class="grid grid-cols-2 gap-2 p-4 overflow-y-auto max-h-[50vh]">
                   <div v-for="(move, index) in boardRef?.history" :key="index"
-                    class="flex justify-center items-center text-md font-mono font-bold gap-8">
+                    :class="{ 'bg-slate-700/50': boardRef?.currentMoveIndex === index + 1 }"
+                    @click="boardRef?.jumpToMove(index + 1)"
+                    class="flex justify-center items-center text-md font-mono font-bold gap-8 p-1 rounded-xl transition hover:bg-slate-500/50">
                     <span v-if="index % 2 === 0" class="text-slate-300">{{ (index + 2) / 2 }}.</span>
                     <span class="text-white">
                       {{ String.fromCharCode(move.destination.x + 97) + (move.destination.y + 1).toString() +
@@ -522,19 +508,19 @@ const copyInviteLink = () => {
                   </div>
                 </div>
                 <div class="flex flex-row border-t border-slate-700">
-                  <button
-                    class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-sm font-medium transition-colors text-center">
-                    开始
+                  <button @click="boardRef?.firstMove()"
+                    class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-xs font-medium transition-colors text-center">
+                    开头
                   </button>
-                  <button
-                    class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-sm font-medium transition-colors text-center">
+                  <button @click="boardRef?.previousMove()"
+                    class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-xs font-medium transition-colors text-center">
                     上一步</button>
-                  <button
-                    class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-sm font-medium transition-colors text-center">
+                  <button @click="boardRef?.nextMove()"
+                    class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-xs font-medium transition-colors text-center">
                     下一步</button>
-                  <button
-                    class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-sm font-medium transition-colors text-center">
-                    结束</button>
+                  <button @click="boardRef?.lastMove()"
+                    class="text-slate-400 hover:text-white hover:bg-slate-700 flex-1 py-3 px-4 text-xs font-medium transition-colors text-center">
+                    最后</button>
                 </div>
               </div>
 

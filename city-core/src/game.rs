@@ -6,12 +6,10 @@ use std::time;
 
 use rand::Rng;
 extern crate wasm_bindgen;
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use serde::{Serialize, Deserialize};
 
-
-#[derive(Clone, Copy)]
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Copy, Deserialize, Serialize)]
 #[wasm_bindgen]
 #[repr(u8)]
 pub enum Cell {
@@ -37,8 +35,7 @@ impl fmt::Debug for Cell {
         }
     }
 }
-#[derive(Clone)]
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Board<T> {
     board_matrix: Vec<Vec<T>>,
 }
@@ -67,7 +64,7 @@ impl Board<bool> {
     fn total(&self) -> usize {
         self.board_matrix.iter().flatten().filter(|&&x| x).count()
     }
-    fn clean(&mut self) {
+    fn clear(&mut self) {
         for i in self.board_matrix.iter_mut() {
             i.fill(false);
         }
@@ -75,7 +72,7 @@ impl Board<bool> {
 }
 
 impl Board<i32> {
-    fn clean(&mut self) {
+    fn clear(&mut self) {
         for i in self.board_matrix.iter_mut() {
             i.fill(-1);
         }
@@ -88,6 +85,14 @@ impl Board<Cell> {
             .iter()
             .map(|row| row.iter().map(|&cell| !cell.is_empty()).collect())
             .collect()
+    }
+
+    fn clear(&mut self) {
+        for row in self.board_matrix.iter_mut() {
+            for cell in row.iter_mut() {
+                *cell = Cell::Empty;
+            }
+        }
     }
 }
 
@@ -138,7 +143,7 @@ pub struct Coordinate {
     pub y: i32,
 }
 
-impl  Coordinate {
+impl Coordinate {
     pub fn to_tuple(self) -> (i32, i32) {
         (self.x, self.y)
     }
@@ -165,7 +170,6 @@ impl Coordinate {
     // pub fn get_y(&self) -> i32 {
     //     self.y
     // }
-    
 }
 
 impl PartialEq for Coordinate {
@@ -307,7 +311,9 @@ pub struct Game {
 
     pub blue_turn: bool, // true for blue, false for green
 
-    pub history: Vec<Move>, // history of moves
+    pub history: Vec<Move>,        // history of moves
+    pub current_move_index: usize, // 1 ~ history.len()
+
     blue_reachable_cache: Board<bool>,
     green_reachable_cache: Board<bool>,
     blue_steps_cache: Board<i32>,
@@ -325,6 +331,7 @@ impl Game {
             vertical_walls: Board::new(width - 1, height, Cell::Empty),
             blue_turn: true,
             history: Vec::new(),
+            current_move_index: 0,
             blue_reachable_cache: Board::new(width, height, false),
             green_reachable_cache: Board::new(width, height, false),
             blue_steps_cache: Board::new(width, height, -1),
@@ -332,12 +339,46 @@ impl Game {
         }
     }
 
+    pub fn is_showing_latest(&self) -> bool {
+        self.current_move_index == self.history.len()
+    }
+
+    pub fn set_current_move_index(&mut self, index: usize) {
+        if index > self.history.len() {
+            panic!("Index out of bounds");
+        }
+
+        self.reset_board();
+
+        for i in 0..index {
+            let mv = self.history[i];
+            self.make_move(mv, false, false);
+        }
+        self.current_move_index = index;
+    }
+
+    fn reset_board(&mut self) {
+        // do not affect the history
+        // reset the board to the initial state
+
+        self.blue_position = Coordinate::new(0, 0);
+        self.green_position = Coordinate::new(self.width - 1, self.height - 1);
+        self.horizontal_walls.clear();
+        self.vertical_walls.clear();
+        self.current_move_index = 0;
+        self.blue_turn = true;
+        self.blue_reachable_cache.clear();
+        self.green_reachable_cache.clear();
+        self.blue_steps_cache.clear();
+        self.green_steps_cache.clear();
+    }
+
     fn reachable_with_cache(&mut self, start: Coordinate, step: i32, ignore_other_player: bool) {
         let reachable = if start == self.blue_position {
-            self.blue_reachable_cache.clean();
+            self.blue_reachable_cache.clear();
             &mut self.blue_reachable_cache
         } else {
-            self.green_reachable_cache.clean();
+            self.green_reachable_cache.clear();
             &mut self.green_reachable_cache
         };
         let mut queue = VecDeque::new();
@@ -385,10 +426,10 @@ impl Game {
 
     fn steps_with_cache(&mut self, start: Coordinate) {
         let dist = if start == self.blue_position {
-            self.blue_steps_cache.clean();
+            self.blue_steps_cache.clear();
             &mut self.blue_steps_cache
         } else {
-            self.green_steps_cache.clean();
+            self.green_steps_cache.clear();
             &mut self.green_steps_cache
         };
         let mut queue: VecDeque<(Coordinate, i32)> = VecDeque::new();
@@ -505,41 +546,47 @@ impl Game {
         scored_moves.into_iter().map(|em| em.mv).collect()
     }
 
-    pub fn make_move(&mut self, mv: Move, safe: bool) -> bool {
+    pub fn make_move(&mut self, mv: Move, safe: bool, add_to_history: bool) -> bool {
         // make the move
         // if mv is in possible_moves, then make the move and place
 
         // return true if the move is made, false otherwise
+        if self.is_showing_latest() && add_to_history || !add_to_history {
+            if safe && !self.possible_moves().contains(&mv) {
+                return false;
+            }
 
-        if safe && !self.possible_moves().contains(&mv) {
-            return false;
+            if self.blue_turn {
+                self.blue_position = mv.destination;
+            } else {
+                self.green_position = mv.destination;
+            }
+
+            let cell = if self.blue_turn {
+                Cell::Blue
+            } else {
+                Cell::Green
+            };
+
+            match mv.place_wall {
+                Direction::Up => self
+                    .horizontal_walls
+                    .set(mv.destination.move_to(Direction::Up), cell),
+                Direction::Down => self.horizontal_walls.set(mv.destination, cell),
+                Direction::Left => self
+                    .vertical_walls
+                    .set(mv.destination.move_to(Direction::Left), cell),
+                Direction::Right => self.vertical_walls.set(mv.destination, cell),
+            }
+
+            self.blue_turn = !self.blue_turn;
         }
-
-        if self.blue_turn {
-            self.blue_position = mv.destination;
-        } else {
-            self.green_position = mv.destination;
+        if add_to_history {
+            if self.is_showing_latest() {
+                self.current_move_index += 1;
+            }
+            self.history.push(mv);
         }
-
-        let cell = if self.blue_turn {
-            Cell::Blue
-        } else {
-            Cell::Green
-        };
-
-        match mv.place_wall {
-            Direction::Up => self
-                .horizontal_walls
-                .set(mv.destination.move_to(Direction::Up), cell),
-            Direction::Down => self.horizontal_walls.set(mv.destination, cell),
-            Direction::Left => self
-                .vertical_walls
-                .set(mv.destination.move_to(Direction::Left), cell),
-            Direction::Right => self.vertical_walls.set(mv.destination, cell),
-        }
-
-        self.blue_turn = !self.blue_turn;
-        self.history.push(mv);
         true
     }
 
@@ -674,7 +721,7 @@ impl Game {
         };
         let mut value = if self.blue_turn { i32::MIN } else { i32::MAX };
         for mv in moves {
-            self.make_move(mv, false);
+            self.make_move(mv, false, true);
             let score = self.minimax_evaluate(depth - 1, alpha, beta, nodes, cutoff);
             self.undo_move();
             if self.blue_turn {
@@ -703,7 +750,7 @@ impl Game {
             .evaluation_sorted_moves(0)
             .into_iter()
             .map(|mv| {
-                self.make_move(mv, false);
+                self.make_move(mv, false, true);
                 let sc = self.minimax_evaluate(depth - 1, i32::MIN, i32::MAX, nodes, 0);
                 self.undo_move();
                 EvaluatedMove::new(mv, sc)
@@ -759,7 +806,7 @@ impl Game {
                     .evaluation_sorted_moves(0)
                     .into_iter()
                     .map(|mv| {
-                        self.make_move(mv, false);
+                        self.make_move(mv, false, true);
                         let sc = self.minimax_evaluate(
                             current_depth - 1,
                             alpha,
@@ -834,7 +881,7 @@ impl Game {
 
     // Helper function to evaluate a specific move
     fn evaluate_move(&mut self, mv: Move) -> i32 {
-        self.make_move(mv, false);
+        self.make_move(mv, false, true);
         let score = self.evaluate();
         self.undo_move();
         score
