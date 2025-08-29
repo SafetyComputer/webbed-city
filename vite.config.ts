@@ -21,11 +21,11 @@ export default ({ mode }) => {
       topLevelAwait(),
       basicSsl({
         /** name of certification */
-        name: 'webbed_city',
+        name: 'city',
         /** custom trust domains */
         domains: ['localhost'],
         /** custom certification directory */
-        certDir: process.env.VITE_CERT_DIR || './certs',
+        certDir: './cert',
       }),
     ],
     resolve: {

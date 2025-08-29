@@ -16,7 +16,7 @@ const role = ref(router.currentRoute.value.query.spectator ? 'viewer' : 'player'
 const color = ref('') // green, blue
 
 // Game state
-const gameTime = ref({ blue: 600, green: 600 }) // 10 minutes each
+const gameTime = ref({ blue: 60, green: 60 }) // 10 minutes each
 const gameStatus = ref('loading') // loading, waiting, playing, finished
 
 
@@ -525,7 +525,7 @@ const copyInviteLink = () => {
               </div>
 
               <!-- Chat -->
-              <div v-if="showChat" class="flex-1 flex flex-col">
+              <div v-if="showChat" class="flex-1 flex flex-col overflow-y-auto">
                 <!-- Messages -->
                 <div class="flex-1 p-4 overflow-y-auto space-y-3 border-t border-slate-700">
                   <div v-for="(msg, index) in chatMessages" :key="index" class="flex flex-col space-y-1">

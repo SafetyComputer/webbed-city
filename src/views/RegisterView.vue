@@ -39,7 +39,53 @@ const handleRegister = async () => {
 
   isLoading.value = true
   errorMessage.value = ''
+  // Clear error message before starting
+  errorMessage.value = ''
 
+  const inputUser = {
+    username: formData.value.username,
+    password: formData.value.password
+  }
+
+  API.users.createUser(inputUser)
+    .then(response => {
+      if (response.data === 'success') {
+        // 注册成功后自动登录
+        API.users.login({
+          username: formData.value.username,
+          password: formData.value.password
+        })
+          .then((res) => {
+            const userData = res.data
+            userStore.login(userData)
+            router.push('/')
+          })
+      } else {
+        throw new Error('Registration failed')
+      }
+    })
+    .catch((error: unknown) => {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const apiError = error as { response?: { data?: string } }
+        if (apiError.response?.data === 'user already exists') {
+          errorMessage.value = '用户名已存在，请选择其他用户名'
+        } else {
+          errorMessage.value = '注册失败，请稍后重试'
+        }
+      } else if (error instanceof Error && error.message === 'Registration failed') {
+        errorMessage.value = '注册失败，请稍后重试'
+      } else {
+        errorMessage.value = '网络错误，请检查您的连接'
+      }
+
+      // 如果登录失败，引导用户到登录页面
+      if (error && typeof error === 'object' && 'response' in error) {
+        router.push('/login')
+      }
+    })
+    .finally(() => {
+      isLoading.value = false
+    })
   try {
     const inputUser = {
       username: formData.value.username,

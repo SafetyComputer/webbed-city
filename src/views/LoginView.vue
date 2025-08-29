@@ -27,7 +27,7 @@ const handleLogin = async () => {
   }
 
   await API.users.login(inputLogin)
-    .then(async (res) => {
+    .then((res) => {
       const userData = res.data
       userStore.login(userData)
       router.push('/')
